@@ -2,7 +2,10 @@
 /// DO NOT MODIFY ANY CODE BELOW THIS POINT
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#include <clock.h>
+
+#include <cassert>
+#include "clock.h"
+#include "constants.h"
 
 void createBlockNames() {
     std::ostringstream s;
@@ -30,8 +33,7 @@ std::chrono::milliseconds Measure_AddBlocks(Graph& graph)
     {
         ++blockNum;
         blockNum %= s_distinctBlocks;
-
-        Block* b = new Block;
+        std::unique_ptr<Block> b = std::make_unique<Block>();
         b->SetName(s_blockNames[blockNum]);
         for (int j = 0; j < s_attributesPerBlock; ++j)
         {
@@ -39,32 +41,37 @@ std::chrono::milliseconds Measure_AddBlocks(Graph& graph)
             attrNum %= s_distinctAttributes;
             b->AddAttribute(s_attrs[attrNum]);
         }
-        graph.AddBlock(b);
+        graph.AddBlock(std::move(b));
     }
     auto end = std::chrono::system_clock::now();
 
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 }
 
-std::chrono::milliseconds Measure_FindAttributesByBlock(Graph& graph)
+std::chrono::milliseconds Measure_FindAttributesByBlock(const Graph& graph)
 {
     auto start = std::chrono::system_clock::now();
-    int compareLength = s_attrBaseName.length();
+    size_t compareLength = s_attrBaseName.length();
 
-    for (auto block : graph.GetBlocks()) {
-        for (const auto& attr : block->GetAttributes()) {
-            assert(attr.compare(0, compareLength, s_attrBaseName) == 0);
+    for (const auto& pair : graph.GetAllBlocks()) {
+        const auto& block = pair.second;  // Access the Block via pair.second (the unique_ptr<Block>)
+
+        if (block) {
+            for (const auto& attr : block->GetAttributes()) {
+                assert(attr.compare(0, compareLength, s_attrBaseName) == 0);
+            }
         }
     }
 
+
     auto end = std::chrono::system_clock::now();
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 }
 
-std::chrono::milliseconds Measure_FindBlocksByAttribute(Graph& graph)
+std::chrono::milliseconds Measure_FindBlocksByAttribute(const Graph& graph)
 {
     auto start = std::chrono::system_clock::now();
-    int compareLength = s_blockBaseName.length();
+    size_t compareLength = s_blockBaseName.length();
 
     for (const auto& attr : s_attrs) {
         for (auto block : graph.GetBlocksWithAttribute(attr)) {
@@ -75,3 +82,4 @@ std::chrono::milliseconds Measure_FindBlocksByAttribute(Graph& graph)
 
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 }
+
