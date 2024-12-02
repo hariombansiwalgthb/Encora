@@ -1,107 +1,63 @@
 #include "graph.h"
-#include <iostream>
-#include <string>
 
-//Block Impl
-std::string Block::GetName() const { return m_name; }
-void Block::SetName(const std::string& name)
+Block::Block() { }
+Block::~Block() { }
+const std::string& Block::GetName() const { return m_name; }
+void Block::SetName(const std::string& name) { m_name = name; }
+void Block::AddAttribute(const std::string& attribute) { m_attributes.insert(attribute); }
+std::unordered_set<std::string>& Block::GetAttributes() { return m_attributes; }
+
+
+// Adds the passed block to this graph. Potentially renames the block prior to insertion to guarantee
+// each block in the graph has a unique name.
+void Graph::AddBlock(Block* block)
 {
-    try
-    {
-        if (name.empty()) {
-            throw std::invalid_argument("Block name cannot be empty");
-        }
-        m_name = name;
+    std::string uniqueName = GetUniqueBlockNameInGraph(block->GetName());
+    block->SetName(uniqueName);
+
+    std::unique_ptr<Block> blockPtr(block);
+    for (const auto& attribute : block->GetAttributes()) {
+        m_attributeIndex.emplace(attribute, block);
     }
-    catch (const std::invalid_argument& e) {
-        std::cerr << "Error in SetName: " << e.what() << std::endl;
-    }
+
+    m_blocksByName[uniqueName] = std::move(blockPtr);
 }
 
-void Block::AddAttribute(const std::string& attribute)
-{
-    try
-    {
-        if (attribute.empty()) {
-            throw std::invalid_argument("Attribute cannot be empty");
-        }
-        m_attributes.insert(attribute);
+std::unordered_set<Block*> Graph::GetBlocks() {
+    std::unordered_set<Block*> result;
+    for (auto& pair : m_blocksByName) {
+        result.insert(pair.second.get());
     }
-    catch (const std::invalid_argument& e) {
-        std::cerr << "Error in AddAttribute: " << e.what() << std::endl;
-    }
-}
-const std::unordered_set<std::string>& Block::GetAttributes() const { return m_attributes; }
-
-//Graph Impl
- // Adds a block to the graph with unique name handling
-void Graph::AddBlock(std::unique_ptr<Block> block)
-{
-    try
-    {
-        if (!block) {
-            throw std::invalid_argument("Cannot add a null block to the graph");
-        }
-        std::string uniqueName = GetUniqueBlockNameInGraph(block);
-        block->SetName(uniqueName);
-        m_blocks[uniqueName] = std::move(block);
-
-        // Also map attributes to the blocks
-        for (const auto& attribute : m_blocks[uniqueName]->GetAttributes())
-        {
-            m_attributes[attribute].push_back(m_blocks[uniqueName].get());
-        }
-    }
-    catch (const std::invalid_argument& e) {
-        std::cerr << "Error adding block: " << e.what() << std::endl;
-    }
-
+    return result;
 }
 
-// Get all blocks in the graph
-const std::unordered_map<std::string, std::unique_ptr<Block>>& Graph::GetAllBlocks() const
+std::unordered_set<Block*> Graph::GetBlocksWithAttribute(const std::string& attribute)
 {
-    return m_blocks;
-}
+    std::unordered_set<Block*> result;
+    auto range = m_attributeIndex.equal_range(attribute);
 
-// Get blocks by attribute
-std::vector<Block*> Graph::GetBlocksWithAttribute(const std::string& attribute) const
-{
-    auto it = m_attributes.find(attribute);
-    if (it != m_attributes.end())
-    {
-        return it->second;
+    for (auto it = range.first; it != range.second; ++it) {
+        result.insert(it->second);
     }
-    return {}; // Empty vector if no blocks have this attribute
+    return result;
 }
 
-// Check if a block's name already exists in the graph
-bool Graph::BlockNameExistsInGraph(const std::string& blockName) const
-{
-    return m_blocks.find(blockName) != m_blocks.end();
-}
 
-// Get a unique name for a block
-std::string Graph::GetUniqueBlockNameInGraph(const std::unique_ptr<Block>& block) const
+// Generate a unique name for this block within the graph.
+// If there's no name collision, then the original Block name is returned.
+// If there is a name collision, then we will appends numbers to the name to make unique.
+// So if you call with a block named "a" and there's already a block named "a", then it will return "a1".
+// If there's already an "a1" then it will return "a2", and so on.
+
+std::string Graph::GetUniqueBlockNameInGraph(const std::string& baseName)
 {
-    std::string originalName = block->GetName();
-    std::string potentialName = block->GetName();
-    unsigned int count = 0;
-    bool foundUniqueName = false;
-    while (foundUniqueName == false)
-    {
-        if (!BlockNameExistsInGraph(potentialName))
-        {
-            foundUniqueName = true;
-        }
-        else if (BlockNameExistsInGraph(potentialName))
-        {
-            std::ostringstream s;
-            s << originalName << count;
-            potentialName = s.str();
-            count++;
-        }
+
+    std::string potentialName = baseName;
+    int count = 0;
+
+    while (m_blocksByName.find(potentialName) != m_blocksByName.end()) {
+        potentialName = baseName + std::to_string(count++);
     }
+
     return potentialName;
 }
-

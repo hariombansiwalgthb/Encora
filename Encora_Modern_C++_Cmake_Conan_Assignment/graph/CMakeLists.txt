@@ -8,14 +8,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)  # Disable compiler-specific extensions
 
 #add_compile_options(-Wall -Wextra)
 
-add_library(${PROJECT_NAME} src/graph.cpp)
+add_library(${PROJECT_NAME} SHARED src/graph.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 
-install(TARGETS ${PROJECT_NAME}
-        EXPORT graphConfig
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include)
-install(DIRECTORY include/ DESTINATION include)
+add_library(${PROJECT_NAME}_static STATIC src/graph.cpp)
+target_include_directories(${PROJECT_NAME}_static PUBLIC include)
 
+
+export(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_static FILE ${CMAKE_BINARY_DIR}/CMakeExports.cmake)

@@ -10,15 +10,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)  # Disable compiler-specific extensions
 
 find_package(graph_lib REQUIRED)
 
-add_library(${PROJECT_NAME} src/clock.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC graph_lib)
-target_include_directories(${PROJECT_NAME} PUBLIC include ${graph_lib_INCLUDE_DIRS})
+add_library(${PROJECT_NAME} SHARED src/clock.cpp)
+target_link_libraries(${PROJECT_NAME} PUBLIC graph_lib::graph_lib)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
 
-install(TARGETS ${PROJECT_NAME}
-        EXPORT clockConfig
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include)
-install(DIRECTORY include/ DESTINATION include)
+
+
 

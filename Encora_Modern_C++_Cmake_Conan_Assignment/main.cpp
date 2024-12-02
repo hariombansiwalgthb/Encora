@@ -2,8 +2,6 @@
 /// DO NOT MODIFY ANY CODE BELOW THIS POINT
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#include <iostream>
-
 #include "graph.h"
 #include "clock.h"
 

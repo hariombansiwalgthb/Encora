@@ -14,6 +14,4 @@ find_package(graph_lib REQUIRED)
 find_package(clock_lib REQUIRED)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE graph_lib::graph_lib clock_lib::clock_lib)
-target_include_directories(Application PRIVATE ${graph_lib_INCLUDE_DIRS}
-                                               ${clock_lib_INCLUDE_DIRS})
 
